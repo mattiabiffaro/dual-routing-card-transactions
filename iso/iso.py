@@ -14,7 +14,7 @@ import socket
 import os
 
 # Import from local directories
-import all956
+import interface_specifications
 
 
 # Global variables
