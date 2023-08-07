@@ -1,4 +1,4 @@
-"""Creates objects representing records and interface attributes from the ISO8583 interface specifications"""
+"""Creates objects representing records and interface attributes from NEXI's ALL956"""
 
 
 # Import modules from the Standard Library
@@ -54,22 +54,22 @@ class Network:
 class Fields:
     """Defines the attributes of message fields"""
 
-    def __init__(self, count = 129, bitmap = "", val = [], present = {}, len = [], var_len = [], dynamic = [], def_val = {}, inheritance = {}, padding_type = [], amount_counter = 0, reversal_indicator = False, original_data = {}, subfield_count = [], subfield_val = [], subfield_type = [], subfield_present = {}, subfield_def_val = {}, subfield_dynamic = []):
+    def __init__(self):
 
-        self.count = count # Number of fields. Note that DE000 is the message type
-        self.bitmap = bitmap
-        self.val = val # Field value
-        self.present = present # Defines if a field is supposed to be present for a given message type
+        self.count = 129 # Number of fields. Note that DE000 is the message type
+        self.bitmap = ""
+        self.val = [] # Field value
+        self.present = {} # Defines if a field is supposed to be present for a given message type
         self.present["1100"] = []
         self.present["1110"] = []
         self.present["1120"] = self.present["1121"] = []
         self.present["1130"] = []
         self.present["1420"] = self.present["1421"] = []
         self.present["1430"] = []
-        self.len = len # Field length. Note that it indicates the max threshold for variable length fields
-        self.var_len = var_len # Defines which fields have variable length and how many bytes must be used as a prefix to declare the actual length
-        self.dynamic = dynamic # Defines whether the field's default value is set dynamically
-        self.def_val = def_val # Defines static default values for non-dynamic fields
+        self.len = [] # Field length. Note that it indicates the max threshold for variable length fields
+        self.var_len = [] # Defines which fields have variable length and how many bytes must be used as a prefix to declare the actual length
+        self.dynamic = [] # Defines whether the field's default value is set dynamically
+        self.def_val = {} # Defines static default values for non-dynamic fields
         self.def_val["Message Type"] = ""
         self.def_val["1100"] = []
         self.def_val["1110"] = []
@@ -77,11 +77,11 @@ class Fields:
         self.def_val["1130"] = []
         self.def_val["1420"] = self.def_val["1421"] = []
         self.def_val["1430"] = []
-        self.inheritance = inheritance # Defines values for fields inheriting them from other fields
-        self.padding_type = padding_type # Defines what character to use when applying padding
-        self.amount_counter = amount_counter # Counter for default values of fields containing amounts of some kind
-        self.reversal_indicator = reversal_indicator # Defines whether the next transaction is a reversal
-        self.original_data = original_data # Preserves previous transaction data for reversal requests
+        self.inheritance = {} # Defines values for fields inheriting them from other fields
+        self.padding_type = [] # Defines what character to use when applying padding
+        self.amount_counter = 0 # Counter for default values of fields containing amounts of some kind
+        self.reversal_indicator = False # Defines whether the next transaction is a reversal
+        self.original_data = {} # Preserves previous transaction data for reversal requests
         self.original_data = {
             0: "",
             2: "",
@@ -103,18 +103,18 @@ class Fields:
             63: "",
             102: ""
         }
-        self.subfield_count = subfield_count
-        self.subfield_val = subfield_val
-        self.subfield_type = subfield_type
-        self.subfield_present = subfield_present
+        self.subfield_count = []
+        self.subfield_val = []
+        self.subfield_type = []
+        self.subfield_present = {}
         self.subfield_present["1100"] = []
         self.subfield_present["1120"] = self.subfield_present["1121"] = []
         self.subfield_present["1420"] = self.subfield_present["1421"] = []
-        self.subfield_def_val = subfield_def_val
+        self.subfield_def_val = {}
         self.subfield_def_val["1100"] = []
         self.subfield_def_val["1120"] = self.subfield_def_val["1121"] = []
         self.subfield_def_val["1420"] = self.subfield_def_val["1421"] = []
-        self.subfield_dynamic = subfield_dynamic
+        self.subfield_dynamic = []
 
         # Initialize fields up to to self.count
         for i in range(self.count):

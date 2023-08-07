@@ -14,18 +14,11 @@ import socket
 import os
 
 # Import from local directories
-import interface_specifications
+import all956
 
 
 # Global variables
-flags = {
-    "transfer": False,
-    "logs": True
-}
 field = all956.Fields()
-in_filename = ""
-out_filename = ""
-log_filename = ""
 logfile = None
 message_count = 0
 tcp_socket = None
@@ -34,41 +27,37 @@ timeout_message = "Timeout"
 
 def main():
 
-    argparse()
+    args = argparse()
 
     # Initialize variables
-    global flags
     global message_count
     global logfile
     global field
 
     # Open files
-    infile = open(in_filename, encoding="utf-8-sig")
-    outfile = open(out_filename, "w")
-    if flags["logs"] is True:
-        logfile = open(log_filename, "a")
+    infile = open(args["in_filename"], encoding="utf-8-sig")
+    outfile = open(args["out_filename"], "w")
+    if args["logs"] is True:
+        logfile = open(args["log_filename"], "a")
 
     reader = csv.DictReader(infile)
     if len(reader.fieldnames) != 131:
-        print(f"{in_filename} contains an incorrect template")
+        print(f"{args['in_filename']} contains an incorrect template")
         sys.exit(1)
     fieldnames = ["Scenario", "ISO Request", "ISO Response", "Response Code"]
     writer = csv.DictWriter(outfile, fieldnames=fieldnames)
     writer.writeheader()
 
     for row in reader:
-
         # Update/reset variables
         message_count += 1
         response_code = ""
 
         # Update Reversal Indicator
         if row["Message Type"] in ["1420", "1421"] or re.match("^.*Reversal.*$", row["Preset"], re.IGNORECASE):
-
             field.reversal_indicator = True
             if row["Message Type"] == "":
                 row["Message Type"] = "1420"
-
         else:
             field.reversal_indicator = False
 
@@ -90,14 +79,11 @@ def main():
 
         # Assign values to fields
         for i in range(3, field.count + 1):
-
             field_n = i - 1
 
             if row[reader.fieldnames[i]] == "":
                 field.set(field.val[0], field_n)
-
             else:
-
                 if field.subfield_count[field_n] != 1:
                     field.val[field_n] = field.check_substructure(row[reader.fieldnames[i]], field_n)
                 else:
@@ -115,13 +101,13 @@ def main():
         # Finalize message
         message = field.val[0] + field.val[1] + message
 
-        if flags["logs"] is True:
+        if args["logs"] is True:
             format(message)
 
         # Send message to ISO Listener
-        if flags["transfer"] is True:
+        if args["transfer"] is True:
             response = send(message)
-            if flags["logs"] is True:
+            if args["logs"] is True:
                 response_code = format(response)
         else:
             response = ""
@@ -132,13 +118,13 @@ def main():
     # Close files and sockets
     infile.close()
     outfile.close()
-    if flags["transfer"] is True:
+    if args["transfer"] is True:
         send(network.get("signoff"))
         print("Closing socket\n")
         tcp_socket.close()
-    print(all956.esc("green") + out_filename + all956.esc("default") + " generated")
-    if flags["logs"] is True:
-        print(all956.esc("green") + log_filename + all956.esc("default") + " generated")
+    print(all956.esc("green") + args["out_filename"] + all956.esc("default") + " generated")
+    if args["logs"] is True:
+        print(all956.esc("green") + args["log_filename"] + all956.esc("default") + " generated")
         logfile.close()
 
     print()
@@ -149,10 +135,13 @@ def argparse():
     """Parses arguments from the terminal"""
 
     # Initialize variables
-    global flags
-    global in_filename
-    global out_filename
-    global log_filename
+    args = {
+        "in_filename": "",
+        "out_filename": "",
+        "log_filename": "",
+        "transfer": False,
+        "logs": True
+    }
     global tcp_socket
     global network
     docker = False
@@ -175,69 +164,54 @@ def argparse():
     if not os.path.exists(out_path):
         os.mkdir(out_path)
 
-    # parse arguments
+    # Parse arguments
     for arg in sys.argv:
-
         if re.match("^.*iso.py$", arg):
             pass
-
         elif re.match("in/", arg):
-
-            in_filename = arg
-            if not re.match("^.*.csv$", in_filename):
-                in_filename += ".csv"
-
+            args["in_filename"] = arg
+            if not re.match("^.*.csv$", args["in_filename"]):
+                args["in_filename"] += ".csv"
         elif re.match("out/", arg):
-
-            out_filename = arg
-            if not re.match("^.*.csv$", out_filename):
-                out_filename += ".csv"
-
+            args["out_filename"] = arg
+            if not re.match("^.*.csv$", args["out_filename"]):
+                args["out_filename"] += ".csv"
         elif arg in ["--send", "-s"]:
-
             # Setup TCP/IP connection
-            flags["transfer"] = True
+            args["transfer"] = True
             socket.setdefaulttimeout(3)
             network = all956.Network()
             print("Opening socket\n")
             try:
-                tcp_socket = socket.create_connection(('XX.XXX.XX.XXX', XXX))
+                tcp_socket = socket.create_connection(('10.110.50.147', 462))
             except TimeoutError:
-                raise TimeoutError("Not able to establish a connection with the ISO Listener")
-
+                raise TimeoutError("Not able to establish a connection with Temenos, make sure you are connected to Flowe VPN")
         elif arg == "--nologs":
-
-            flags["logs"] = False
-
+            args["logs"] = False
         else:
-
-            if flags["transfer"]:
-                print("Closing socket")
-                tcp_socket.close()
             print(f"{arg} is not a valid argument")
             sys.exit(1)
 
-    if in_filename == "":
-
+    if args["in_filename"] == "":
         print("Input file not specified. Type in/'filename'.csv to choose an input file")
         sys.exit(1)
 
-    if out_filename == "":
+    if args["out_filename"] == "":
+        args["out_filename"] = "out/" + args["in_filename"][3:]
 
-        out_filename = "out/" + in_filename[3:]
-
-    if flags["logs"]:
-            
+    if args["logs"] is True:    
         # Create logs path if it doesn't exist
-            if docker is True:
-                logs_path = "/workspaces" + iso_path + "/logs"
-            else:
-                logs_path = home + iso_path + "/logs"
-            if not os.path.exists(logs_path):
-                os.mkdir(logs_path)
+        if docker is True:
+            logs_path = "/workspaces" + iso_path + "/logs"
+        else:
+            logs_path = home + iso_path + "/logs"
+        if not os.path.exists(logs_path):
+            os.mkdir(logs_path)
 
-            # Generate log filename
-            log_filename = "logs/" + in_filename[3:-4] + "_" + datetime.datetime.today().strftime("%y%m%d%H%M%S") + ".txt"
+        # Generate log filename
+        args["log_filename"] = "logs/" + args["in_filename"][3:-4] + "_" + datetime.datetime.today().strftime("%y%m%d%H%M%S") + ".txt"
+
+    return args
 
 
 def maintain_connection():
@@ -282,14 +256,12 @@ def send(message):
     request["binary"] = request["len"].encode("utf-8") + request["binary"]
 
     try:
-
         # Send message
         feedback = tcp_socket.sendall(request["binary"])
         if feedback == None:
             print(f"Request ({str(int(request['len']))} bytes long): {request['value']} ")
             response = {}
             response["binary"] = tcp_socket.recv(1024)
-
     except TimeoutError:
         if message[0:4] != network.mti:
             print(f"Message n. {message_count} timed out\n")

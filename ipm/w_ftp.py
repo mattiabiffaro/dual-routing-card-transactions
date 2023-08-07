@@ -1,4 +1,4 @@
-"""An FTP client class with a few fixes specific for Microsoft FTP Servers.
+"""An FTP client class and some helper functions.
 
 Based on RFC 959: File Transfer Protocol (FTP), by J. Postel and J. Reynolds
 
